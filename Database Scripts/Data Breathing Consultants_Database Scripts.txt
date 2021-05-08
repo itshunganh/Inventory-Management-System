@@ -1,0 +1,135 @@
+USE heroku_f0d1bfb747fe8bb;
+
+/*accounts*/
+CREATE TABLE `accounts` (
+  `Acc_ID` int(11) NOT NULL AUTO_INCREMENT,
+  `Email` varchar(255) NOT NULL,
+  `Password` varchar(255) NOT NULL,
+  PRIMARY KEY (`Acc_ID`),
+  UNIQUE KEY `Email_UNIQUE` (`Email`)
+);
+
+/*batches*/
+CREATE TABLE `batches` (
+  `Batch_ID` varchar(9) NOT NULL DEFAULT '',
+  `Supp_Batch_ID` varchar(30) NOT NULL,
+  `P_F_R` char(1) DEFAULT NULL,
+  `Quantity_Produced` decimal(8,2) NOT NULL,
+  `Quantity_Produced_Type` varchar(2) NOT NULL,
+  `Obtainment_Date` date DEFAULT NULL,
+  `Documented_Date` date DEFAULT NULL,
+  `Acc_ID` int(11) NOT NULL,
+  PRIMARY KEY (`Batch_ID`),
+  KEY `FK_batches_Acc_ID` (`Acc_ID`),
+  KEY `FK_Batches_Supp_Batch_ID` (`Supp_Batch_ID`),
+  CONSTRAINT `FK_Batches_Supp_Batch_ID` FOREIGN KEY (`Supp_Batch_ID`) REFERENCES `supplier_batches` (`Supp_Batch_ID`) ON DELETE CASCADE,
+  CONSTRAINT `FK_batches_Acc_ID` FOREIGN KEY (`Acc_ID`) REFERENCES `accounts` (`Acc_ID`)
+);
+
+/*customers*/
+CREATE TABLE `customers` (
+  `Cust_ID` int(11) NOT NULL AUTO_INCREMENT,
+  `Cust_Name` varchar(255) NOT NULL,
+  `Phone_No` varchar(15) DEFAULT NULL,
+  `Email` varchar(255) DEFAULT NULL,
+  `City_Name` varchar(255) DEFAULT NULL,
+  `State_Name` varchar(255) DEFAULT NULL,
+  `Zip_Code` int(5) DEFAULT NULL,
+  PRIMARY KEY (`Cust_ID`)
+);
+
+/*employees*/
+CREATE TABLE `employees` (
+  `Emp_ID` int(11) NOT NULL AUTO_INCREMENT,
+  `Acc_ID` int(11) NOT NULL,
+  `First_Name` varchar(255) NOT NULL,
+  `Last_Name` varchar(255) NOT NULL,
+  PRIMARY KEY (`Emp_ID`),
+  KEY `FK_employees_Acc_ID` (`Acc_ID`),
+  CONSTRAINT `FK_employees_Acc_ID` FOREIGN KEY (`Acc_ID`) REFERENCES `accounts` (`Acc_ID`)
+);
+
+/*products*/
+CREATE TABLE `products` (
+  `CAS_No` varchar(30) NOT NULL,
+  `Compound` varchar(255) NOT NULL,
+  `Purity` varchar(255) DEFAULT NULL,
+  `Notes` varchar(255) DEFAULT NULL,
+  `Batch_ID` varchar(9) NOT NULL,
+  PRIMARY KEY (`CAS_No`),
+  KEY `FK_Products_Batch_ID` (`Batch_ID`),
+  CONSTRAINT `FK_Products_Batch_ID` FOREIGN KEY (`Batch_ID`) REFERENCES `batches` (`Batch_ID`) ON DELETE CASCADE
+);
+
+/*supplier_batches*/
+CREATE TABLE `supplier_batches` (
+  `Supp_Batch_ID` varchar(30) NOT NULL,
+  `Supp_ID` int(9) NOT NULL,
+  PRIMARY KEY (`Supp_Batch_ID`),
+  KEY `FK_supplier_batches_Supp_ID` (`Supp_ID`),
+  CONSTRAINT `FK_supplier_batches_Supp_ID` FOREIGN KEY (`Supp_ID`) REFERENCES `suppliers` (`Supp_ID`)
+);
+
+/*suppliers*/
+CREATE TABLE `suppliers` (
+  `Supp_ID` int(11) NOT NULL AUTO_INCREMENT,
+  `Supplier` varchar(255) NOT NULL,
+  `Phone_No` varchar(15) DEFAULT NULL,
+  `Email` varchar(255) DEFAULT NULL,
+  `City_Name` varchar(255) DEFAULT NULL,
+  `State_Name` varchar(255) DEFAULT NULL,
+  `Zip_Code` int(5) DEFAULT NULL,
+  PRIMARY KEY (`Supp_ID`),
+  KEY `FK_Suppliers_Zip_Code` (`Zip_Code`)
+);
+
+/*transactions*/
+CREATE TABLE `transactions` (
+  `Trans_ID` int(11) NOT NULL AUTO_INCREMENT,
+  `Supp_ID` int(9) NOT NULL,
+  `Cust_ID` int(9) NOT NULL,
+  `Batch_ID` varchar(9) NOT NULL,
+  `Trans_Type` varchar(4) NOT NULL,
+  `Shipped_Date` date DEFAULT NULL,
+  `Quantity_Shipped` decimal(8,2) NOT NULL,
+  `Quantity_Shipped_Type` varchar(2) NOT NULL,
+  `Total_Amount` decimal(10,2) DEFAULT NULL,
+  `Tracking_Link` varchar(255) DEFAULT NULL,
+  `Trans_Notes` varchar(255) DEFAULT NULL,
+  `Trans_Date` date DEFAULT NULL,
+  `Acc_ID` int(11) NOT NULL,
+  `Order_No` varchar(20) NOT NULL,
+  PRIMARY KEY (`Trans_ID`),
+  KEY `FK_Transactions_Supp_ID` (`Supp_ID`),
+  KEY `FK_Transactions_Cust_ID` (`Cust_ID`),
+  KEY `FK_Transactions_Batch_ID` (`Batch_ID`),
+  KEY `FK_transactions_Acc_ID` (`Acc_ID`),
+  CONSTRAINT `FK_Transactions_Batch_ID` FOREIGN KEY (`Batch_ID`) REFERENCES `batches` (`Batch_ID`) ON DELETE CASCADE,
+  CONSTRAINT `FK_Transactions_Cust_ID` FOREIGN KEY (`Cust_ID`) REFERENCES `customers` (`Cust_ID`),
+  CONSTRAINT `FK_Transactions_Supp_ID` FOREIGN KEY (`Supp_ID`) REFERENCES `suppliers` (`Supp_ID`),
+  CONSTRAINT `FK_transactions_Acc_ID` FOREIGN KEY (`Acc_ID`) REFERENCES `accounts` (`Acc_ID`)
+);
+
+/*Queries*/
+
+/*Query 1*/
+/*A report that will show the user information regarding all transactions that have occurred, ordered by the date of all transactions.*/
+select Trans_Date, Cust_Name, Supplier, Quantity_Shipped, Reserve, Notes
+from transactions
+join suppliers using (Supp_ID)
+join customers using (Cust_ID)
+join batches using (Batch_ID)
+group by Trans_Date;
+
+/*Query 2*/
+/*A report that will show the user information regarding all products, ordered by CAS_No.*/
+select CAS_No, Compound, Purity, P_F_R, Obtainment_Date, Documented_Date, Notes
+from products
+join batches using (Batch_ID)
+group by CAS_No;
+
+/*Query 3*/
+/*A report that will show the user information regarding all customers, ordered by customer name.*/
+select Cust_Name, Email, Phone_No, State_Name, City_Name, Zip_Code
+from customers
+group by Cust_Name;
